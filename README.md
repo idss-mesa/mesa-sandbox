@@ -15,13 +15,13 @@ Status (2026-09-06): **Phase 0 complete; Phase 2 foundation in place.** `resourc
 | `docs/threat-model.md` | assets, adversaries, boundaries, threats → controls |
 | `docs/adr/` | fifteen architecture decision records |
 | `docs/research/` | nine fact-checked research reports, a completeness critique, the Agent Substrate/kagent brief, Kasm/Cursor/Iron Bank notes, and current-state audits of the five existing image repos |
-| `docs/runbooks/` | node-baseline discovery checklist (hand-off to cluster operators) |
+| `docs/runbooks/` | node-baseline discovery checklist (hand-off to cluster operators); build-fleet runbook (Colima + AMD VM + DGX Spark + CI) |
 | `resources.yaml` / `resources.lock` / `resources.hcl` | every downloaded artifact and base image, pinned and checksummed (`scripts/resources.py`) |
 | `docker-bake.hcl`, `Makefile` | the image family: `make build T=<target>`, `make test`, `make push` (multi-arch) |
 | `images/tools` | the shared, sha256-verified toolchain layer (agent CLIs, MCP servers, CyVerse tools) |
 | `images/common` | boot library, `cyverse-login`/`logout`, `aiverde-setup`, harness configs, `agent` user, sudo removal |
 | `images/{cli,jupyterlab,rstudio,vscode,kasm,agent-runner}` | app overlays |
-| `k8s/` | R1 seccomp + AppArmor profiles (Phase 3), more to come |
+| `k8s/` | Phase 3 drafts: seccomp + AppArmor profiles, PSA namespace, RuntimeClasses, P1/P2 templates, NetworkPolicy N0–N3, agent-sandbox templates, Kyverno policies, js2/cyverse overlays |
 | `tests/smoke.sh` | the runtime contract check |
 
 ## Build
