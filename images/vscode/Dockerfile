@@ -6,8 +6,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 USER root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-      tmux git openssh-client gettext-base jq unzip xz-utils bzip2 less bubblewrap socat libicu74 libssl3 python3 && \
+    apt-get update && icu="$(apt-cache search --names-only '^libicu[0-9]+$' | awk '{print $1}' | sort -V | tail -1)" && \
+    apt-get install -y --no-install-recommends \
+      tmux git openssh-client gettext-base jq unzip xz-utils bzip2 less bubblewrap socat "$icu" python3 && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=tools /opt/vice /opt/vice
 COPY images/common /opt/vice/common
