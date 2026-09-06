@@ -1,0 +1,14 @@
+{
+  "name": "mesa-sandbox-tools-npm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "npm-distributed agent CLIs and MCP servers for the mesa-sandbox tools image; versions come from resources.yaml (renovate: npm)",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.263",
+    "@openai/codex": "0.153.4",
+    "@musistudio/claude-code-router": "3.0.22",
+    "@modelcontextprotocol/server-filesystem": "2026.8.31",
+    "@google/gemini-cli": "0.58.0"
+  }
+}

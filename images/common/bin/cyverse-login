@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# cyverse-login — authenticate GoCommands and the local iRODS/mesa MCP servers
+# to your private CyVerse Data Store for THIS session.
+#
+# Writes ~/.irods/.irodsA (0600, human-only) using the standard iRODS
+# obfuscation. That file is your CyVerse account password in reversible form:
+# it is readable by any process running as YOUR uid, which in profile P1 means
+# the tools you run yourself but not the `agent` user. It is removed by
+# cyverse-logout or when the analysis ends. Prefer the OAuth Data Store MCP
+# (`claude mcp login irods-auth`) for agents; see docs/adr/0004.
+set -euo pipefail
+PY=/opt/vice/python/bin/python3
+HOST="${IRODS_HOST:-data.cyverse.org}"; PORT="${IRODS_PORT:-1247}"; ZONE="${IRODS_ZONE_NAME:-iplant}"
+ENVDIR="$HOME/.irods"; ENVFILE="$ENVDIR/irods_environment.json"; AUTHFILE="$ENVDIR/.irodsA"
+TTL_HOURS="${CYVERSE_LOGIN_TTL_HOURS:-8}"
+c_cyan=$'\e[38;2;45;212;191m'; c_green=$'\e[38;2;74;222;128m'; c_orange=$'\e[38;2;212;113;42m'; c_off=$'\e[0m'
+say(){ printf '%s%s%s\n' "$c_cyan" "$1" "$c_off"; }; warn(){ printf '%s%s%s\n' "$c_orange" "$1" "$c_off"; }
+say "CyVerse Data Store login ($HOST, zone $ZONE)"
+warn "The stored credential is your CyVerse account password (reversibly scrambled) and is"
+warn "readable by everything that runs as your uid until you run cyverse-logout."
+default_user="${IPLANT_USER:-}"
+printf '%sCyVerse username [%s]:%s ' "$c_green" "$default_user" "$c_off"; read -r user; user="${user:-$default_user}"
+[ -n "$user" ] || { warn "No username; aborting."; exit 1; }
+printf '%sCyVerse password:%s ' "$c_green" "$c_off"; read -rs pw; echo
+[ -n "$pw" ] || { warn "No password; aborting."; exit 1; }
+mkdir -p "$ENVDIR"; chmod 700 "$ENVDIR"
+cat > "$ENVFILE" <<JSON
+{ "irods_host": "$HOST", "irods_port": $PORT, "irods_zone_name": "$ZONE", "irods_user_name": "$user", "irods_authentication_scheme": "native" }
+JSON
+chmod 600 "$ENVFILE"
+PW="$pw" "$PY" - "$AUTHFILE" <<'PYEOF'
+import os, sys
+from irods.password_obfuscation import encode
+p = sys.argv[1]
+with open(p, "w") as f: f.write(encode(os.environ["PW"]))
+os.chmod(p, 0o600)
+PYEOF
+unset pw
+say "Verifying against /$ZONE/home/$user ..."
+if "$PY" - "$ENVFILE" "/$ZONE/home/$user" <<'PYEOF'
+import sys
+from irods.session import iRODSSession
+try:
+    with iRODSSession(irods_env_file=sys.argv[1]) as s: s.collections.get(sys.argv[2])
+except Exception as e:
+    print(e, file=sys.stderr); sys.exit(1)
+PYEOF
+then
+  say "Authenticated as $user. gocmd and the local iRODS/mesa MCP servers now act as you."
+  # Best-effort expiry: a background timer removes the credential after TTL_HOURS.
+  ( sleep "$((TTL_HOURS*3600))" && rm -f "$AUTHFILE" ) >/dev/null 2>&1 & disown
+  say "Credential expires in ${TTL_HOURS}h (CYVERSE_LOGIN_TTL_HOURS) or with cyverse-logout."
+else
+  warn "Login test failed; removing the stored credential."; rm -f "$AUTHFILE"; exit 1
+fi

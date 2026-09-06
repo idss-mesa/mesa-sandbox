@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "irods": { "command": "/opt/vice/bin/irods-mcp-server", "args": [],
+      "env": { "IRODS_HOST": "data.cyverse.org", "IRODS_PORT": "1247", "IRODS_ZONE_NAME": "iplant", "IRODS_MCP_SVR_IRODS_SHARED_DIR_NAME": "shared" } },
+    "mesa": { "command": "/opt/vice/bin/mesa-mcp", "args": [],
+      "env": { "MESA_MCP_IRODS__HOST": "data.cyverse.org", "MESA_MCP_IRODS__PORT": "1247", "MESA_MCP_IRODS__ZONE": "iplant" } },
+    "formation": { "serverUrl": "https://de.cyverse.org/formation/mcp" },
+    "filesystem": { "command": "/opt/vice/bin/mcp-server-filesystem", "args": ["${VICE_HOME}/work"] }
+  }
+}

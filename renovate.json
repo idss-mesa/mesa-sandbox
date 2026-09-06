@@ -1,0 +1,75 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "postUpdateOptions": [],
+  "docker": {
+    "pinDigests": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "resources.yaml image digests: ref + digest + renovate hint",
+      "fileMatch": [
+        "^resources\\.yaml$"
+      ],
+      "matchStrings": [
+        "ref: (?<depName>[^:\\s]+):(?<currentValue>[^\\s@]+)\\n\\s+digest: (?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "resources.yaml artifact versions with a renovate hint on the next line",
+      "fileMatch": [
+        "^resources\\.yaml$"
+      ],
+      "matchStrings": [
+        "version: (?<currentValue>[^\\s]+)\\n\\s+renovate: \\{datasource: (?<datasource>[^,]+), depName: (?<depName>[^,}]+)(?:, currentValue: (?<currentValueOverride>[^,}]+))?"
+      ],
+      "extractVersionTemplate": "^v?(?<version>.+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "images/tools/npm/package.json"
+      ],
+      "groupName": "agent CLIs (npm)"
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "kasmweb/ubuntu-jammy-desktop-ai-dev",
+        "kasmweb/ubuntu-noble-nvidia-pytorch"
+      ],
+      "groupName": "Kasm bases"
+    }
+  ],
+  "postUpgradeTasks": {
+    "commands": [
+      "python3 -m venv .venv && .venv/bin/pip install -q pyyaml && .venv/bin/python scripts/resources.py lock --force && .venv/bin/python scripts/resources.py export && .venv/bin/python scripts/resources.py hcl"
+    ],
+    "fileFilters": [
+      "resources.yaml",
+      "resources.lock",
+      "resources.hcl"
+    ],
+    "executionMode": "branch"
+  }
+}

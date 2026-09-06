@@ -1,0 +1,21 @@
+# Goose CLI — mesa-sandbox defaults. Provider env (GOOSE_PROVIDER, OPENAI_HOST,
+# OPENAI_BASE_PATH, GOOSE_MODEL) is set by the `goose` wrapper in /opt/vice/bin,
+# which reads the per-analysis key from ~/.config/vice/llm.key for that one
+# process only; nothing is exported into interactive shells (ADR-0003).
+active_provider: openai
+providers:
+  openai: { enabled: true, model: js2/gpt-oss-120b, configured: true }
+GOOSE_MODE: smart_approve
+extensions:
+  developer: { type: builtin, name: developer, bundled: true, enabled: true, timeout: 300 }
+  irods: { type: streamable_http, name: irods, enabled: true, uri: "https://mcp-public.cyverse.ai/mcp", timeout: 300 }
+  mesa:
+    type: stdio
+    name: mesa
+    enabled: true
+    cmd: /opt/vice/bin/mesa-mcp
+    args: []
+    envs: { MESA_MCP_IRODS__HOST: data.cyverse.org, MESA_MCP_IRODS__PORT: "1247", MESA_MCP_IRODS__ZONE: iplant }
+    timeout: 300
+  formation: { type: streamable_http, name: formation, enabled: true, uri: "https://de.cyverse.org/formation/mcp", timeout: 300 }
+  filesystem: { type: stdio, name: filesystem, enabled: true, cmd: /opt/vice/bin/mcp-server-filesystem, args: ["${VICE_HOME}/work"], timeout: 300 }

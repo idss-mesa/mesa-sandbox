@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# aiverde-setup — store your CyVerse AI Verde key for this session.
+#
+# AI Verde issues a per-user key (https://chat.cyverse.ai → Course → API Key).
+# This helper validates it and writes it ONLY to ~/.config/vice/llm.key (0600).
+# Nothing is exported into ~/.bashrc: Claude Code reads it through the
+# apiKeyHelper (vice-llm-key), OpenCode through {file:~/.config/vice/llm.key},
+# Goose through its wrapper, and `ccr` through its own config (ADR-0003).
+# When VICE launches the analysis with a per-analysis key already in place,
+# this helper is not needed.
+set -euo pipefail
+BASE="${VICE_LLM_BASE_URL:-https://llm-api.cyverse.ai/v1}"; BASE="${BASE%/}"; V1="${BASE%/v1}/v1"
+CFG="$HOME/.config/vice"; KEYFILE="$CFG/llm.key"
+c_cyan=$'\e[38;2;45;212;191m'; c_green=$'\e[38;2;74;222;128m'; c_orange=$'\e[38;2;212;113;42m'; c_muted=$'\e[38;2;74;98;114m'; c_off=$'\e[0m'
+say(){ printf '%s%s%s\n' "$c_cyan" "$1" "$c_off"; }; warn(){ printf '%s%s%s\n' "$c_orange" "$1" "$c_off"; }; note(){ printf '%s%s%s\n' "$c_muted" "$1" "$c_off"; }
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  echo "Usage: aiverde-setup [API_KEY]   (writes $KEYFILE, 0600; never exports the key)"; exit 0; fi
+KEY="${1:-}"
+if [ -z "$KEY" ]; then
+  say "CyVerse AI Verde setup"; note "Log in at https://chat.cyverse.ai, open Course → API Key, copy the key."
+  printf '%sPaste your AI Verde API key:%s ' "$c_green" "$c_off"; read -rs KEY; echo
+fi
+[ -n "$KEY" ] || { warn "No key entered; aborting."; exit 1; }
+say "Validating key against $V1/models ..."
+resp="$(curl -fsS -L "$V1/models" -H "Authorization: Bearer $KEY" 2>/dev/null)" || { warn "Could not authenticate to AI Verde."; exit 1; }
+models="$(printf '%s' "$resp" | /opt/vice/python/bin/python3 -c 'import sys,json; print("\n".join(m["id"] for m in json.load(sys.stdin).get("data",[])))' 2>/dev/null || true)"
+say "Available models:"; printf '%s\n' "$models" | sed 's/^/  - /'
+mkdir -p "$CFG"; chmod 700 "$CFG"; (umask 177; printf '%s' "$KEY" > "$KEYFILE"); chmod 600 "$KEYFILE"
+printf 'VICE_LLM_BASE_URL=%s\nVICE_LLM_API_KEY_FILE=%s\n' "$V1" "$KEYFILE" > "$CFG/llm.env"; chmod 600 "$CFG/llm.env"
+default_model="$(printf '%s\n' "$models" | grep -v '^anthropic/' | head -1 || true)"
+say "Saved to $KEYFILE (0600). Not exported to your shell."
+say "OpenCode: opencode (provider aiverde)   Goose: goose (wrapper injects the key)   Claude Code: apiKeyHelper"
+if printf '%s\n' "$models" | grep -q '^anthropic/'; then
+  m="$(printf '%s\n' "$models" | grep '^anthropic/' | head -1)"
+  note "Claude Code: export ANTHROPIC_BASE_URL=${V1%/v1} ANTHROPIC_MODEL=$m   (key comes from the helper)"
+else
+  note "Claude Code: no Anthropic models on this course; use 'ccr code' with provider URL $V1/chat/completions"
+fi
+[ -n "$default_model" ] && note "Default OpenAI-compatible model: $default_model"

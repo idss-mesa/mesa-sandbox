@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "irods": { "url": "https://mcp-public.cyverse.ai/mcp" },
+    "mesa": { "command": "/opt/vice/bin/mesa-mcp", "args": [],
+      "env": { "MESA_MCP_IRODS__HOST": "data.cyverse.org", "MESA_MCP_IRODS__PORT": "1247", "MESA_MCP_IRODS__ZONE": "iplant" } },
+    "formation": { "url": "https://de.cyverse.org/formation/mcp" },
+    "filesystem": { "command": "/opt/vice/bin/mcp-server-filesystem", "args": ["${VICE_HOME}/work"] }
+  }
+}

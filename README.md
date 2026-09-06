@@ -4,7 +4,7 @@ AI sandboxes for CyVerse VICE, built by the NSF MESA project (Multidisciplinary 
 
 VICE runs interactive research environments (JupyterLab, RStudio Server, VS Code Server, a Kasm Ubuntu desktop, a tmux CLI) as Kubernetes pods in the CyVerse Discovery Environment. Those images now carry AI coding agents (Claude Code, OpenAI Codex, OpenCode, Goose, Google Antigravity, Cursor, Anthropic's `ant`) and MESA MCP servers. This repository is the plan and the implementation for running those agents **with the user's permissions but without the user's secrets**, autonomously and uninterrupted, at explicit sandbox levels.
 
-Status: **Phase 0 (documentation and decisions) complete, 2026-09-06.** No image has been built from this repository yet; see `docs/plan.md` for the phases.
+Status (2026-09-06): **Phase 0 complete; Phase 2 foundation in place.** `resources.yaml` locks 31 artifacts (sha256 per architecture, cross-checked against upstream checksum files), the `tools` image and the `mesa-cli` overlay build natively on arm64 and pass `tests/smoke.sh` (non-root, no sudo, health, every agent CLI answers, no secrets in the environment). The other overlays (`jupyterlab`, `rstudio`, `vscode`, `kasm`, `agent-runner`) are drafted and unbuilt; CI workflows and the R1 seccomp/AppArmor profiles are drafted and untested on a cluster. See `docs/plan.md` for the phases.
 
 ## What is here
 
@@ -16,7 +16,23 @@ Status: **Phase 0 (documentation and decisions) complete, 2026-09-06.** No image
 | `docs/adr/` | fifteen architecture decision records |
 | `docs/research/` | nine fact-checked research reports, a completeness critique, the Agent Substrate/kagent brief, Kasm/Cursor/Iron Bank notes, and current-state audits of the five existing image repos |
 | `docs/runbooks/` | node-baseline discovery checklist (hand-off to cluster operators) |
-| `resources.yaml`, `docker-bake.hcl`, `images/`, `k8s/`, `tests/` | arrive in Phases 2–5 |
+| `resources.yaml` / `resources.lock` / `resources.hcl` | every downloaded artifact and base image, pinned and checksummed (`scripts/resources.py`) |
+| `docker-bake.hcl`, `Makefile` | the image family: `make build T=<target>`, `make test`, `make push` (multi-arch) |
+| `images/tools` | the shared, sha256-verified toolchain layer (agent CLIs, MCP servers, CyVerse tools) |
+| `images/common` | boot library, `cyverse-login`/`logout`, `aiverde-setup`, harness configs, `agent` user, sudo removal |
+| `images/{cli,jupyterlab,rstudio,vscode,kasm,agent-runner}` | app overlays |
+| `k8s/` | R1 seccomp + AppArmor profiles (Phase 3), more to come |
+| `tests/smoke.sh` | the runtime contract check |
+
+## Build
+
+```bash
+make venv && make check          # PyYAML venv; resources.lock/.hcl in sync
+make build T=tools               # local platform, loads harbor.cyverse.org/vice/mesa-tools:dev
+make build T=cli && tests/smoke.sh harbor.cyverse.org/vice/mesa-cli:dev
+make builder AMD_VM=ssh://user@amd-vm [SPARK=ssh://user@sparky-1]   # native amd64 + arm64 nodes
+make push TAG=$(date +%F)        # multi-arch manifest lists + attestations to Harbor
+```
 
 ## The design in one paragraph
 

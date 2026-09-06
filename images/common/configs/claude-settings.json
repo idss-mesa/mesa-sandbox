@@ -1,0 +1,38 @@
+{
+  "$comment": "mesa-sandbox managed defaults for Claude Code (ADR-0003, ADR-0005). Installed to ~/.claude/settings.json on first boot; the human may relax it, agents may not (profile P2+ pods use the agent-runner copy that is read-only).",
+  "env": {
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "apiKeyHelper": "/opt/vice/bin/vice-llm-key",
+  "permissions": {
+    "deny": [
+      "Read(~/.irods/**)", "Read(~/.aws/**)", "Read(~/.ssh/**)", "Read(~/.config/gh/**)", "Read(~/.config/aiverde/**)", "Read(~/.config/vice/**)",
+      "Read(~/.codex/auth.json)", "Read(~/.local/share/opencode/auth.json)", "Read(~/.gemini/**)", "Read(~/.cursor/**)", "Read(~/.claude-code-router/**)",
+      "Bash(sudo *)", "Bash(su *)"
+    ],
+    "ask": ["Bash(git push *)", "Bash(gocmd rm *)", "Bash(gocmd mv *)", "Bash(rm -rf *)"]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": false,
+    "credentials": {
+      "files": [
+        { "path": "~/.irods", "mode": "deny" }, { "path": "~/.aws", "mode": "deny" }, { "path": "~/.ssh", "mode": "deny" },
+        { "path": "~/.config/gh", "mode": "deny" }, { "path": "~/.config/aiverde", "mode": "deny" }, { "path": "~/.config/vice", "mode": "deny" },
+        { "path": "~/.codex", "mode": "deny" }, { "path": "~/.gemini", "mode": "deny" }, { "path": "~/.cursor", "mode": "deny" },
+        { "path": "~/.local/share/opencode", "mode": "deny" }, { "path": "~/.claude-code-router", "mode": "deny" }
+      ],
+      "envVars": [
+        { "name": "LLM_API_KEY", "mode": "deny" }, { "name": "OPENAI_API_KEY", "mode": "deny" }, { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
+        { "name": "GEMINI_API_KEY", "mode": "deny" }, { "name": "CURSOR_API_KEY", "mode": "deny" }, { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" }, { "name": "GH_TOKEN", "mode": "deny" }
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "llm-api.cyverse.ai", "api.anthropic.com", "mcp.cyverse.ai", "mcp-public.cyverse.ai", "de.cyverse.org", "data.cyverse.org", "kc.cyverse.org",
+        "github.com", "api.github.com", "objects.githubusercontent.com", "pypi.org", "files.pythonhosted.org", "conda.anaconda.org", "cran.r-project.org", "cloud.r-project.org", "registry.npmjs.org", "harbor.cyverse.org"
+      ]
+    }
+  }
+}

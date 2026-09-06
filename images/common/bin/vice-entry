@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# vice-entry — shared boot library for every mesa-sandbox image (ADR-0008).
+#
+# Sourced (not executed) by each app's entrypoint. It never copies dotfiles
+# from the Data Store, never exports secrets into the shell environment, and
+# never uses sudo. Everything it does is idempotent and safe under a read-only
+# root filesystem (only $HOME and /tmp are written).
+#
+# Environment (injected by VICE / app-exposer):
+#   IPLANT_USER          CyVerse username            (required for iRODS env)
+#   IPLANT_EXECUTION_ID  analysis id                 (optional, used in prompts/logs)
+#   REDIRECT_URL         external URL of this app    (optional)
+#   VICE_PROFILE         sandbox profile P0..P4      (default P1; recorded in ~/.vice/profile)
+#   VICE_IMPORT_DOTFILES if "1", copy ONLY ~/.gitconfig from the Data Store home
+#   VICE_LLM_BASE_URL    OpenAI/Anthropic-compatible gateway (e.g. https://llm-api.cyverse.ai/v1)
+#   VICE_LLM_API_KEY_FILE path to a 0600 file holding the per-analysis LLM key (never the key itself)
+set -euo pipefail
+
+VICE_HOME="${HOME:?HOME must be set}"
+VICE_STATE="$VICE_HOME/.vice"
+DATA_STORE_HOME="/data-store/iplant/home/${IPLANT_USER:-}"
+
+vice::log() { printf '[vice-entry] %s\n' "$*" >&2; }
+
+vice::state_dir() { mkdir -p "$VICE_STATE"; chmod 700 "$VICE_STATE"; }
+
+# Record the sandbox profile for the splash/prompt and for audit tooling.
+vice::profile() {
+  vice::state_dir
+  printf '%s\n' "${VICE_PROFILE:-P1}" > "$VICE_STATE/profile"
+}
+
+# Write ~/.irods/irods_environment.json for GoCommands and the local MCP servers.
+# Anonymous unless the user later runs cyverse-login (which adds .irodsA with a TTL).
+vice::irods_env() {
+  local dir="$VICE_HOME/.irods"
+  mkdir -p "$dir"; chmod 700 "$dir"
+  if [ -n "${IPLANT_USER:-}" ]; then
+    cat > "$dir/irods_environment.json" <<JSON
+{
+  "irods_host": "${IRODS_HOST:-data.cyverse.org}",
+  "irods_port": ${IRODS_PORT:-1247},
+  "irods_zone_name": "${IRODS_ZONE_NAME:-iplant}",
+  "irods_user_name": "${IPLANT_USER}",
+  "irods_authentication_scheme": "native"
+}
+JSON
+  else
+    cat > "$dir/irods_environment.json" <<JSON
+{
+  "irods_host": "${IRODS_HOST:-data.cyverse.org}",
+  "irods_port": ${IRODS_PORT:-1247},
+  "irods_zone_name": "${IRODS_ZONE_NAME:-iplant}",
+  "irods_user_name": "anonymous",
+  "irods_authentication_scheme": "native"
+}
+JSON
+  fi
+  chmod 600 "$dir/irods_environment.json"
+}
+
+# Opt-in, non-secret dotfile import. Only .gitconfig; never .ssh, .aws, .irods,
+# .netrc or any token cache (ADR-0003).
+vice::import_dotfiles() {
+  [ "${VICE_IMPORT_DOTFILES:-0}" = "1" ] || return 0
+  if [ -f "$DATA_STORE_HOME/.gitconfig" ] && [ ! -e "$VICE_HOME/.gitconfig" ]; then
+    cp "$DATA_STORE_HOME/.gitconfig" "$VICE_HOME/.gitconfig" && chmod 600 "$VICE_HOME/.gitconfig"
+    vice::log "imported .gitconfig from the Data Store (VICE_IMPORT_DOTFILES=1)"
+  fi
+}
+
+# Lock down the human's credential directories so the `agent` user (UID 1001)
+# cannot read them even inside the same pod (profile P1).
+vice::lockdown_home() {
+  local d
+  for d in .irods .aws .ssh .config/gh .config/aiverde .claude .codex .gemini .cursor .config/goose .config/opencode .local/share/opencode .claude-code-router .vice; do
+    [ -e "$VICE_HOME/$d" ] && chmod -R go-rwx "$VICE_HOME/$d" 2>/dev/null || true
+  done
+}
+
+# Per-analysis LLM gateway wiring without exporting a key into the environment:
+# writes ~/.config/vice/llm.env (0600) that helpers read on demand.
+vice::llm_config() {
+  local cfg="$VICE_HOME/.config/vice"; mkdir -p "$cfg"; chmod 700 "$cfg"
+  {
+    echo "VICE_LLM_BASE_URL=${VICE_LLM_BASE_URL:-https://llm-api.cyverse.ai/v1}"
+    echo "VICE_LLM_API_KEY_FILE=${VICE_LLM_API_KEY_FILE:-$cfg/llm.key}"
+  } > "$cfg/llm.env"; chmod 600 "$cfg/llm.env"
+}
+
+# Install the shipped harness configs into $HOME if absent (never overwrite a
+# user's own edits). Sources live in /opt/vice/etc/configs.
+# Configs are templates with ${VICE_HOME}; envsubst makes them concrete per image.
+vice::_cfg() { # $1 template  $2 destination
+  [ -e "$2" ] && return 0
+  VICE_HOME="$VICE_HOME" envsubst '${VICE_HOME}' < "$1" > "$2" && chmod 600 "$2"
+}
+vice::install_configs() {
+  local src=/opt/vice/etc/configs
+  [ -d "$src" ] || return 0
+  install -d -m 700 "$VICE_HOME/.claude" "$VICE_HOME/.codex" "$VICE_HOME/.config/opencode" "$VICE_HOME/.config/goose" "$VICE_HOME/.gemini/config" "$VICE_HOME/.cursor"
+  mkdir -p "$VICE_HOME/work"
+  vice::_cfg "$src/claude.json"                 "$VICE_HOME/.claude.json"
+  vice::_cfg "$src/claude-settings.json"        "$VICE_HOME/.claude/settings.json"
+  vice::_cfg "$src/codex-config.toml"           "$VICE_HOME/.codex/config.toml"
+  vice::_cfg "$src/opencode.json"               "$VICE_HOME/.config/opencode/opencode.json"
+  vice::_cfg "$src/goose-config.yaml"           "$VICE_HOME/.config/goose/config.yaml"
+  vice::_cfg "$src/antigravity-mcp_config.json" "$VICE_HOME/.gemini/config/mcp_config.json"
+  vice::_cfg "$src/cursor-cli-config.json"      "$VICE_HOME/.cursor/cli-config.json"
+  vice::_cfg "$src/cursor-mcp.json"             "$VICE_HOME/.cursor/mcp.json"
+}
+
+# Expose the CSI-mounted Data Store home at ~/data-store when VICE mounts it at
+# /data-store (no copy, no credential). Harmless when running outside VICE.
+vice::link_datastore() {
+  local src="$DATA_STORE_HOME" dst="$VICE_HOME/data-store"
+  if [ -n "${IPLANT_USER:-}" ] && [ -d "$src" ] && [ ! -e "$dst" ]; then ln -s "$src" "$dst"; fi
+  [ -e "$dst" ] || mkdir -p "$dst"
+}
+
+vice::boot() {
+  vice::profile
+  vice::irods_env
+  vice::import_dotfiles
+  vice::llm_config
+  vice::install_configs
+  vice::link_datastore
+  vice::lockdown_home
+  vice::log "profile=$(cat "$VICE_STATE/profile") user=${IPLANT_USER:-anonymous} analysis=${IPLANT_EXECUTION_ID:-local}"
+}

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "editor": { "vimMode": false },
+  "approvalMode": "allowlist",
+  "permissions": {
+    "allow": ["Shell(git)", "Shell(gocmd)", "Shell(python3)", "Shell(ls)", "Shell(cat)", "Shell(grep)", "Read(**)", "Write(**)"],
+    "deny": ["Read(~/.irods/**)", "Read(~/.aws/**)", "Read(~/.ssh/**)", "Read(~/.config/gh/**)", "Read(~/.config/vice/**)", "Read(~/.claude/**)", "Read(~/.codex/**)", "Shell(sudo)", "Shell(su)"]
+  },
+  "sandbox": { "mode": "enabled", "networkAccess": "allowlist" }
+}

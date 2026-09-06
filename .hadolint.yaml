@@ -1,0 +1,18 @@
+# hadolint config for mesa-sandbox. FROM lines reference named bake contexts
+# (base, tools, ubuntu, golang, uv) that resources.hcl pins by digest, so the
+# "untagged/latest image" rules do not apply; every download is verified by
+# fetch.sh from resources.lock, and apt package versions are governed by the
+# digest-pinned base plus weekly rebuilds.
+ignored:
+  - DL3006   # FROM without tag: bake contexts are digest-pinned
+  - DL3007   # FROM :latest: same
+  - DL3008   # apt pin versions: base digest + weekly rebuild instead
+  - DL3013   # pip pin versions: uv --require-hashes lock instead
+  - DL3059   # consecutive RUNs are intentional layer boundaries
+  - SC2086   # word splitting is intentional in the unpack step
+failure-threshold: warning
+trustedRegistries:
+  - harbor.cyverse.org
+  - quay.io
+  - ghcr.io
+  - docker.io

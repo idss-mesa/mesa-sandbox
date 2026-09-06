@@ -1,0 +1,39 @@
+# Scans of the published images: Trivy + Grype (CVEs, SARIF to the Security tab),
+# dockle (CIS runtime hardening). Report-only until the fleet converges (plan Phase 2).
+name: security
+on:
+  schedule: [{ cron: "0 8 * * 1" }]
+  workflow_dispatch:
+  pull_request: { paths: ["images/**", "resources.*", "docker-bake.hcl"] }
+permissions: { contents: read, security-events: write }
+jobs:
+  scan:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    strategy: { fail-fast: false, matrix: { image: [mesa-tools, mesa-cli, mesa-agent-runner] } }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/login-action@v3
+        with: { registry: harbor.cyverse.org, username: "${{ secrets.HARBOR_USERNAME }}", password: "${{ secrets.HARBOR_PASSWORD }}" }
+      - uses: aquasecurity/trivy-action@0.28.0
+        with: { image-ref: "harbor.cyverse.org/vice/${{ matrix.image }}:latest", format: sarif, output: trivy.sarif, severity: "HIGH,CRITICAL", ignore-unfixed: true, exit-code: "0" }
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: trivy.sarif, category: "trivy-${{ matrix.image }}" }
+      - uses: anchore/scan-action@v6
+        id: grype
+        with: { image: "harbor.cyverse.org/vice/${{ matrix.image }}:latest", fail-build: false, severity-cutoff: high }
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: "${{ steps.grype.outputs.sarif }}", category: "grype-${{ matrix.image }}" }
+      - name: dockle (CIS)
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock goodwithtech/dockle:v0.4.15 --exit-code 0 "harbor.cyverse.org/vice/${{ matrix.image }}:latest"
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hadolint/hadolint-action@v3.1.0
+        with: { recursive: true, failure-threshold: warning, no-fail: true, format: sarif, output-file: hadolint.sarif }
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: hadolint.sarif, category: hadolint }

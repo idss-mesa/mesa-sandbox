@@ -1,0 +1,33 @@
+# Codex CLI — mesa-sandbox defaults (ADR-0003). Codex is not wired to AI Verde
+# (no Responses API there); it uses its own OpenAI auth. Sandbox and approval
+# policy are explicit so headless runs never silently gain write/network access.
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+network_access = false
+
+[mcp_servers.irods]
+command = "/opt/vice/bin/irods-mcp-server"
+args = []
+[mcp_servers.irods.env]
+IRODS_HOST = "data.cyverse.org"
+IRODS_PORT = "1247"
+IRODS_ZONE_NAME = "iplant"
+IRODS_MCP_SVR_IRODS_SHARED_DIR_NAME = "shared"
+
+[mcp_servers.mesa]
+command = "/opt/vice/bin/mesa-mcp"
+args = []
+[mcp_servers.mesa.env]
+MESA_MCP_IRODS__HOST = "data.cyverse.org"
+MESA_MCP_IRODS__PORT = "1247"
+MESA_MCP_IRODS__ZONE = "iplant"
+
+[mcp_servers.formation]
+url = "https://de.cyverse.org/formation/mcp"
+oauth_resource = "https://de.cyverse.org/formation/mcp"
+
+[mcp_servers.filesystem]
+command = "/opt/vice/bin/mcp-server-filesystem"
+args = ["${VICE_HOME}/work"]

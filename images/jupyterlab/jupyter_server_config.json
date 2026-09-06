@@ -1,0 +1,8 @@
+{
+  "ServerApp": {
+    "token": "", "password": "", "allow_origin": "*", "allow_remote_access": true,
+    "allow_unauthenticated_access": true, "disable_check_xsrf": true,
+    "terminado_settings": { "shell_command": ["/bin/bash", "-l"] }
+  },
+  "IdentityProvider": { "token": "" }
+}

@@ -1,0 +1,368 @@
+apiVersion: mesa-sandbox/v1
+platforms:
+  - linux/amd64
+  - linux/arm64
+images:
+  ubuntu-noble:
+    ref: docker.io/library/ubuntu:24.04
+    digest: sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: ubuntu
+  jupyter-minimal:
+    ref: quay.io/jupyter/minimal-notebook:2026-09-01
+    digest: sha256:aebcf531fc77f3341568f5e37de7eb392ae48f1ae5ce9bc9cf779bd602548d17
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: quay.io/jupyter/minimal-notebook
+  jupyter-datascience:
+    ref: quay.io/jupyter/datascience-notebook:2026-09-01
+    digest: sha256:c2bb6cf9516cf786ce0ea154e5f7093544aaaa57d5cafd1f9aa9f8c3d0942e28
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: quay.io/jupyter/datascience-notebook
+  rocker-geospatial:
+    ref: ghcr.io/rocker-org/geospatial:4.6.1
+    digest: sha256:4cee92a576e26c31546860eb252290f8f259e8236d49600d6bee695dfb96cae5
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: ghcr.io/rocker-org/geospatial
+  code-server:
+    ref: ghcr.io/coder/code-server:4.135.0
+    digest: sha256:ccd326184d71efc5ebb94155eda7bb30153902342a35dbc8525450d81aa55012
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: ghcr.io/coder/code-server
+  kasm-ai-dev:
+    ref: docker.io/kasmweb/ubuntu-jammy-desktop-ai-dev:1.19.0
+    digest: sha256:af7b6c40c8fbca6097d40268feaf5ddeca1311663388eff8628b3ec8900793d1
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: kasmweb/ubuntu-jammy-desktop-ai-dev
+  kasm-nvidia-pytorch:
+    ref: docker.io/kasmweb/ubuntu-noble-nvidia-pytorch:1.19.0
+    digest: sha256:442976c40eecd41c7f5ae8c942aaa992e18db582f81d2ed324b9fa7292bee7e2
+    platforms:
+      - linux/amd64
+    renovate:
+      datasource: docker
+      depName: kasmweb/ubuntu-noble-nvidia-pytorch
+  golang:
+    ref: docker.io/library/golang:1.25-bookworm
+    digest: sha256:3b4a11519ad929d1e1d261a12cff056f0c85b735253d7d861346b9c6f8b36437
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: golang
+  uv:
+    ref: ghcr.io/astral-sh/uv:0.9.4-python3.13-bookworm-slim
+    digest: sha256:661ae5d98b045922b10684e22214cbeabe38d5bcdc900025d4c3e8174b304511
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    renovate:
+      datasource: docker
+      depName: ghcr.io/astral-sh/uv
+resources:
+  - name: tini
+    kind: binary
+    version: 0.19.0
+    renovate:
+      datasource: github-releases
+      depName: krallin/tini
+    upstream_checksum:
+      url: https://github.com/krallin/tini/releases/download/v0.19.0/{filename}.sha256sum
+    artifacts:
+      linux/amd64:
+        url: https://github.com/krallin/tini/releases/download/v0.19.0/tini-amd64
+        sha256: 93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c
+        size: 24064
+      linux/arm64:
+        url: https://github.com/krallin/tini/releases/download/v0.19.0/tini-arm64
+        sha256: 07952557df20bfd2a95f9bef198b445e006171969499a1d361bd9e6f8e5e0e81
+        size: 23904
+  - name: ttyd
+    kind: binary
+    version: 1.7.7
+    renovate:
+      datasource: github-releases
+      depName: tsl0922/ttyd
+    upstream_checksum:
+      url: https://github.com/tsl0922/ttyd/releases/download/1.7.7/SHA256SUMS
+    artifacts:
+      linux/amd64:
+        url: https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64
+        sha256: 8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55
+        size: 1362040
+      linux/arm64:
+        url: https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.aarch64
+        sha256: b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165
+        size: 1370112
+  - name: nodejs
+    kind: archive
+    version: 22.23.2
+    renovate:
+      datasource: node-version
+      depName: node
+    upstream_checksum:
+      url: https://nodejs.org/dist/v22.23.2/SHASUMS256.txt
+    artifacts:
+      linux/amd64:
+        url: https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
+        sha256: d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307
+        size: 31058332
+      linux/arm64:
+        url: https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-arm64.tar.xz
+        sha256: fff4078c5def658577f92c88db7db3bc0072924bfb93fe52c1e744a54e94abb8
+        size: 30246708
+  - name: python
+    kind: archive
+    version: 3.13.15+20260901
+    renovate:
+      datasource: github-releases
+      depName: astral-sh/python-build-standalone
+    upstream_checksum:
+      url: https://github.com/astral-sh/python-build-standalone/releases/download/20260901/SHA256SUMS
+    artifacts:
+      linux/amd64:
+        url: https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.13.15+20260901-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
+        sha256: 8a689a077337bea6d1c4bc0b7df1d52fcaa28f5f67e50df8bf417c1e3f9d8874
+        size: 34810677
+      linux/arm64:
+        url: https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.13.15+20260901-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz
+        sha256: 01ce0ce9189feaead3298abf10d4efe998c55a489b3d5d38ca4f83dda7e7977e
+        size: 29222533
+  - name: gocmd
+    kind: archive
+    version: 0.12.3
+    renovate:
+      datasource: github-releases
+      depName: cyverse/gocommands
+    artifacts:
+      linux/amd64:
+        url: https://github.com/cyverse/gocommands/releases/download/v0.12.3/gocmd-v0.12.3-linux-amd64.tar.gz
+        sha256: b04b92ea6e70093dd8ca963eea0db2f625770b14f6a9d7b4e4fc22aeeaacb019
+        size: 10526128
+      linux/arm64:
+        url: https://github.com/cyverse/gocommands/releases/download/v0.12.3/gocmd-v0.12.3-linux-arm64.tar.gz
+        sha256: 2ee73bbc533715f79afe8564582549a25c627a11b20aa18429a9fc64776f7a14
+        size: 9562881
+  - name: gh
+    kind: archive
+    version: 2.100.0
+    renovate:
+      datasource: github-releases
+      depName: cli/cli
+    upstream_checksum:
+      url: https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_checksums.txt
+    artifacts:
+      linux/amd64:
+        url: https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_linux_amd64.tar.gz
+        sha256: e4d4bb4498e8d007abe545b6568926793ace1b6447da598294a610018cb164be
+        size: 15152253
+      linux/arm64:
+        url: https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_linux_arm64.tar.gz
+        sha256: ea4e7a581a32ccad6cc7923cb1576ac5859ba4b9a16ab22eb8f8a96e78e2e961
+        size: 13783869
+  - name: git-credential-manager
+    kind: archive
+    version: 2.9.1
+    renovate:
+      datasource: github-releases
+      depName: git-ecosystem/git-credential-manager
+    artifacts:
+      linux/amd64:
+        url: https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.9.1/gcm-linux-x64-2.9.1.tar.gz
+        sha256: 31fc151c3b111ffe25616a4356bd9a50bdcdbd0922c5e11990fb220c6caf1ce1
+        size: 40199387
+      linux/arm64:
+        url: https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.9.1/gcm-linux-arm64-2.9.1.tar.gz
+        sha256: cf3806b7528b5a5af16bd4bd0683202fc432d9008dd91d20c4c6744b24a033b5
+        size: 37922650
+  - name: awscli
+    kind: archive
+    version: 2.36.40
+    renovate:
+      datasource: github-tags
+      depName: aws/aws-cli
+    artifacts:
+      linux/amd64:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.40.zip
+        sha256: a904e314340ad4c4b62beb50e9259d4becb2acf3dffc86c96c553c834d7fdf7a
+        size: 73397980
+      linux/arm64:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.40.zip
+        sha256: f26e08d0d64d9f35f304a9df94d63cbd11ffe8881c8b4bf60be934cf9e4d13a9
+        size: 70835869
+  - name: duckdb
+    kind: archive
+    version: 1.5.5
+    renovate:
+      datasource: github-releases
+      depName: duckdb/duckdb
+    artifacts:
+      linux/amd64:
+        url: https://github.com/duckdb/duckdb/releases/download/v1.5.5/duckdb_cli-linux-amd64.gz
+        sha256: c61f21485e6e41d3a0c28ce9904ea18346309cf427b4cf9479bc3564348dc885
+        size: 21134380
+      linux/arm64:
+        url: https://github.com/duckdb/duckdb/releases/download/v1.5.5/duckdb_cli-linux-arm64.gz
+        sha256: 50c719e603a4e599d435e5321542458edc1cfc5f7eed65979fe9bc5ae4e3ba23
+        size: 19175640
+  - name: ant
+    kind: archive
+    version: 1.31.0
+    renovate:
+      datasource: github-releases
+      depName: anthropics/anthropic-cli
+    upstream_checksum:
+      url: https://github.com/anthropics/anthropic-cli/releases/download/v1.31.0/ant_1.31.0_checksums.txt
+    artifacts:
+      linux/amd64:
+        url: https://github.com/anthropics/anthropic-cli/releases/download/v1.31.0/ant_1.31.0_linux_amd64.tar.gz
+        sha256: d7ff66396a50f94d822386d3a85e5e3601753e33e45c42a53cff59077667f178
+        size: 8249011
+      linux/arm64:
+        url: https://github.com/anthropics/anthropic-cli/releases/download/v1.31.0/ant_1.31.0_linux_arm64.tar.gz
+        sha256: efb3e62296695dcab8a9e5bb19d3a919ca7d33b581fab48081dd3737044bfd0f
+        size: 7574385
+  - name: opencode
+    kind: archive
+    version: 1.18.29
+    renovate:
+      datasource: github-releases
+      depName: anomalyco/opencode
+    artifacts:
+      linux/amd64:
+        url: https://github.com/anomalyco/opencode/releases/download/v1.18.29/opencode-linux-x64.tar.gz
+        sha256: ea800b7ff56226b70952126c9fc1e2517ca4c4b5682fd9d3f9e87449697a1194
+        size: 60527414
+      linux/arm64:
+        url: https://github.com/anomalyco/opencode/releases/download/v1.18.29/opencode-linux-arm64.tar.gz
+        sha256: 70baf769395ca4e7a68924026530c390eace194f3b7e4919d4efcb2aa2eed3c0
+        size: 60343887
+  - name: goose
+    kind: archive
+    version: 1.49.0
+    renovate:
+      datasource: github-releases
+      depName: aaif-goose/goose
+    artifacts:
+      linux/amd64:
+        url: https://github.com/aaif-goose/goose/releases/download/v1.49.0/goose-x86_64-unknown-linux-gnu.tar.bz2
+        sha256: c631a55e7d826d28c3bcd87b71a0aaecc9612f5a44e6c0d01e7a5b82dd8b7143
+        size: 87028381
+      linux/arm64:
+        url: https://github.com/aaif-goose/goose/releases/download/v1.49.0/goose-aarch64-unknown-linux-gnu.tar.bz2
+        sha256: 246de5a95c5b283bca8419334d1a6088bbb6d2540170c26cec1ce97764bb8735
+        size: 86071596
+  - name: cursor-agent
+    kind: archive
+    version: 2026.09.02-c22c1a3
+    artifacts:
+      linux/amd64:
+        url: https://downloads.cursor.com/lab/2026.09.02-c22c1a3/linux/x64/agent-cli-package.tar.gz
+        sha256: b73b59854762535c0fc20d7ccc51c3b5a356a851491088d60a362be48750f53c
+        size: 179684142
+      linux/arm64:
+        url: https://downloads.cursor.com/lab/2026.09.02-c22c1a3/linux/arm64/agent-cli-package.tar.gz
+        sha256: fb7bc635be6172ebcf68f907fd9217e3614da51916455c6d7fdb66690997884c
+        size: 177647834
+  - name: antigravity
+    kind: archive
+    version: 1.1.27
+    artifacts:
+      linux/amd64:
+        url: https://storage.googleapis.com/antigravity-public/antigravity-cli/1.1.27-5211191891591168/linux-x64/cli_linux_x64.tar.gz
+        sha256: f874d4f6b8a73c2df660f580f25fb656fcb6e64adbfd746e6692e837fd9a20be
+        sha512_upstream: 793d4b9ea2c08d9a7e50bafa02cfc8c19424bd60d6e83f91408d45f9c6d4ce79a5d576fede5bef164d823abf84f81359a14b4ca665952c47b0a7cfd743bb69c0
+        size: 56789301
+      linux/arm64:
+        url: https://storage.googleapis.com/antigravity-public/antigravity-cli/1.1.27-5211191891591168/linux-arm/cli_linux_arm64.tar.gz
+        sha256: 97fc9fe5a6067406cd02cbe4ae6e362c9623a24d33bec486911246c17ceb6a94
+        sha512_upstream: ed45f6930785aa4b42f14e07ace1c9d91a94fb76e760f54acbd7d3d3951e1f957fd456a0dae2a3124dd9a3b689bf7afb7c9303a3e4ba95037fc10063424d9bf9
+        size: 53241342
+  - name: claude-code
+    kind: npm
+    package: '@anthropic-ai/claude-code'
+    version: 2.1.263
+    integrity: sha512-kvvBK6/69iTRYnq0TKVyxVZs1CxYCJGojshQSP+2qaDb66A2xtI4zbCuqkZUWLkFGmHSRqhFf/ATpzH2UNKcwg==
+  - name: codex
+    kind: npm
+    package: '@openai/codex'
+    version: 0.153.4
+    integrity: sha512-wbHDmit7S/YvBGVX1DQmk13xtWblZ2cApeJ/pB7xDZ10Cna+DZc5ij7f0F4OxdsXN4FW1oLT48OpogUI1+8Y2w==
+  - name: claude-code-router
+    kind: npm
+    package: '@musistudio/claude-code-router'
+    version: 3.0.22
+    integrity: sha512-IAfWotZVlj/DLTpjLJXr/meNC1pXscogspX740JWBxzPecFi+KxtNNAaeuSw02Hk0xb7cn9ov+nXswykpkbH5w==
+  - name: mcp-server-filesystem
+    kind: npm
+    package: '@modelcontextprotocol/server-filesystem'
+    version: 2026.8.31
+    integrity: sha512-kKaFkyAh6oipvc9+EAbJ552JafnMnOq5nzmzWkp1jJdBhTAAGpmIpWihUG1+rfNhmEFM98gUZDdCHCDD4v6a7Q==
+  - name: gemini-cli
+    kind: npm
+    package: '@google/gemini-cli'
+    version: 0.58.0
+    integrity: sha512-++LtUYMcLE8dVxMcuwv6kIp8+h6z+std/7iVE+vSunkrwNDaWMFkWw/psv2RSySWjr2A1SsEEIGCK0xULWY2sA==
+  - name: irods-mcp-server
+    kind: source
+    version: 8b1c231394601df49c66929bde971d167288c001
+    renovate:
+      datasource: git-refs
+      depName: https://github.com/idss-mesa/irods-mcp-server
+      currentValue: main
+    artifacts:
+      any:
+        url: https://github.com/idss-mesa/irods-mcp-server/archive/8b1c231394601df49c66929bde971d167288c001.tar.gz
+        sha256: d1862d3810c49090a238a7ce9857af379d5bad7a3e8ddb66e2883cdfe32f714b
+        filename: irods-mcp-server.tar.gz
+        size: 46457
+  - name: mesa-mcp
+    kind: source
+    version: 5816120589d4e7d891b28b983fc0d3e9f3cd3263
+    renovate:
+      datasource: git-refs
+      depName: https://github.com/idss-mesa/mesa-mcp
+      currentValue: main
+    artifacts:
+      any:
+        url: https://github.com/idss-mesa/mesa-mcp/archive/5816120589d4e7d891b28b983fc0d3e9f3cd3263.tar.gz
+        sha256: fd3a910e5808fa3dbe1a3900dca430219238192c80829d92bafd9f319aef3e40
+        filename: mesa-mcp.tar.gz
+        size: 285676
+  - name: mesa-ducklake
+    kind: source
+    version: 75893d5c0497009aed9bb2111f7ed48033b38abf
+    renovate:
+      datasource: git-refs
+      depName: https://github.com/idss-mesa/mesa-ducklake
+      currentValue: main
+    artifacts:
+      any:
+        url: https://github.com/idss-mesa/mesa-ducklake/archive/75893d5c0497009aed9bb2111f7ed48033b38abf.tar.gz
+        sha256: 95edd1b561d087ce197865cc53ca3c98f83ee2b519053c3e416ed11ae4e459b2
+        filename: mesa-ducklake.tar.gz
+        size: 124651

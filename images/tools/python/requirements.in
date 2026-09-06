@@ -1,0 +1,8 @@
+# Python dependencies of the MESA MCP servers, installed into /opt/vice/python
+# (python-build-standalone 3.13) inside the tools image. Compiled with hashes by
+# `make python-lock` (uv pip compile --generate-hashes --universal) so the
+# install runs in --require-hashes mode (ADR-0011). Source tarballs are the
+# commits pinned in resources.yaml.
+mesa-mcp @ https://github.com/idss-mesa/mesa-mcp/archive/5816120589d4e7d891b28b983fc0d3e9f3cd3263.tar.gz
+mesa-ducklake @ https://github.com/idss-mesa/mesa-ducklake/archive/75893d5c0497009aed9bb2111f7ed48033b38abf.tar.gz
+duckdb==1.5.5

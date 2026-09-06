@@ -1,0 +1,12 @@
+#!/bin/sh
+# vice-llm-key — Claude Code `apiKeyHelper`: prints the per-analysis LLM key
+# from the 0600 key file so the key never sits in the shell environment
+# (ADR-0003). Also usable by any tool that wants the key on stdout.
+set -eu
+cfg="${HOME}/.config/vice/llm.env"
+keyfile="${VICE_LLM_API_KEY_FILE:-${HOME}/.config/vice/llm.key}"
+if [ -r "$cfg" ]; then
+  f=$(sed -n 's/^VICE_LLM_API_KEY_FILE=//p' "$cfg"); [ -n "$f" ] && keyfile=$f
+fi
+[ -r "$keyfile" ] || { echo "vice-llm-key: no LLM key at $keyfile (run aiverde-setup or launch with a per-analysis key)" >&2; exit 1; }
+tr -d '\n' < "$keyfile"

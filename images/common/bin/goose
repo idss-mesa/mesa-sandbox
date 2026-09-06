@@ -1,0 +1,11 @@
+#!/bin/sh
+# goose wrapper — injects the AI Verde key into THIS process only (never the
+# interactive shell), then execs the real Goose CLI from /opt/vice/goose.
+set -eu
+cfg="${HOME}/.config/vice/llm.env"
+base="https://llm-api.cyverse.ai"
+if [ -r "$cfg" ]; then b=$(sed -n 's/^VICE_LLM_BASE_URL=//p' "$cfg"); [ -n "$b" ] && base="${b%/v1}"; fi
+if key=$(/opt/vice/bin/vice-llm-key 2>/dev/null); then
+  export OPENAI_API_KEY="$key" OPENAI_HOST="$base" OPENAI_BASE_PATH="v1/chat/completions" GOOSE_PROVIDER="${GOOSE_PROVIDER:-openai}" GOOSE_DISABLE_KEYRING=1
+fi
+exec /opt/vice/goose/goose "$@"

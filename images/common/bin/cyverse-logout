@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# cyverse-logout — remove the stored CyVerse Data Store credential (~/.irods/.irodsA).
+set -euo pipefail
+f="$HOME/.irods/.irodsA"
+if [ -e "$f" ]; then rm -f "$f"; echo "Removed $f — gocmd and local MCP servers are anonymous again."; else echo "No stored credential."; fi

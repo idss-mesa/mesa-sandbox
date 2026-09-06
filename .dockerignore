@@ -1,0 +1,5 @@
+# everything is opt-in: Dockerfiles COPY only resources.lock and images/**
+*
+!resources.lock
+!images/**
+!k8s/**
