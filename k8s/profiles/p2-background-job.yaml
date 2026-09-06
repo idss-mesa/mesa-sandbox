@@ -1,0 +1,51 @@
+# Profile P2 "Background": a separate agent pod (here a Job) sharing only the
+# workspace volume; runs as `agent` (1001) with NO user credentials; the egress
+# proxy sidecar is the only network path (Phase 4 adds the sidecar spec).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: example-p2-agent
+  namespace: vice-apps
+  labels:
+    vice.cyverse.org/profile: P2
+    vice.cyverse.org/parent-analysis-id: example
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 28800           # = the analysis time limit
+  template:
+    metadata:
+      labels: { vice.cyverse.org/profile: P2, vice.cyverse.org/parent-analysis-id: example, vice.cyverse.org/egress: N2 }
+    spec:
+      restartPolicy: Never
+      hostUsers: false
+      serviceAccountName: vice-example-agent   # one SA per analysis, bound to an OpenBao role (ADR-0003)
+      automountServiceAccountToken: true       # projected token used only by the broker sidecar
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 100
+        seccompProfile: { type: Localhost, localhostProfile: vice-sandbox.json }
+        appArmorProfile: { type: Localhost, localhostProfile: vice-sandbox }
+      containers:
+        - name: agent
+          image: harbor.cyverse.org/vice/mesa-agent-runner:latest
+          args: ["claude", "-p", "--bare", "--permission-mode", "dontAsk", "--permission-prompts", "none", "--max-turns", "50", "--max-budget-usd", "2", "--output-format", "stream-json", "Summarise the CSV files in /workspace and write REPORT.md"]
+          env:
+            - { name: IPLANT_USER, value: example }
+            - { name: VICE_PROFILE, value: P2 }
+            - { name: HTTPS_PROXY, value: http://127.0.0.1:3128 }   # egress-proxy sidecar (Phase 4)
+            - { name: ANTHROPIC_BASE_URL, value: https://llm-api.cyverse.ai }
+            - { name: ANTHROPIC_API_KEY, value: sk-ant-sentinel }   # placeholder; the proxy injects the real per-analysis key
+            - { name: CLAUDE_CONFIG_DIR, value: /workspace/.claude }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] }, readOnlyRootFilesystem: true }
+          resources: { requests: { cpu: "1", memory: 2Gi }, limits: { cpu: "2", memory: 8Gi } }
+          volumeMounts:
+            - { name: workspace, mountPath: /workspace }
+            - { name: home, mountPath: /home/agent }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: workspace
+          persistentVolumeClaim: { claimName: example-workspace }   # RWX; or the iRODS CSI PV with a narrower path mapping
+        - { name: home, emptyDir: { sizeLimit: 2Gi } }
+        - { name: tmp, emptyDir: { sizeLimit: 4Gi } }

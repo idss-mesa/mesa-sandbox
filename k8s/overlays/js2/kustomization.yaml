@@ -1,0 +1,21 @@
+# Jetstream2 k3s pilot (ADR-0012). k3s ships kube-router NetworkPolicy; gVisor
+# handler is `runsc`; Kata absent by default (patched out).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../profiles/namespace.yaml
+  - ../../profiles/runtimeclasses.yaml
+  - ../../networkpolicy/egress-classes.yaml
+  - ../../agent-sandbox/sandboxtemplates.yaml
+  - ../../kyverno/policies.yaml
+patches:
+  - target: { kind: NetworkPolicy, name: 20-egress-n1-trusted }
+    patch: |
+      - op: replace
+        path: /spec/egress/1/to/0/ipBlock/cidr
+        value: 128.196.0.0/16
+  - target: { kind: NetworkPolicy, name: 30-egress-n2-cyverse }
+    patch: |
+      - op: replace
+        path: /spec/egress/1/to/0/ipBlock/cidr
+        value: 128.196.0.0/16

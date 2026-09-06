@@ -118,7 +118,7 @@ RUN set -eu; mkdir -p $HOME; fail=0; \
     check "git-credential-manager --version"; check "aws --version"; check "duckdb --version"; check "ant --version"; \
     check "opencode --version"; check "goose --version"; check "agent --version"; check "agy --version"; \
     check "claude --version"; check "codex --version"; check "gemini --version"; check "ccr -h"; \
-    check "mesa-mcp --help"; check "mesa-ducklake 2>&1 | grep -q verb"; check "irods-mcp-server --help"; \
+    check "mesa-mcp --help"; check "mesa-ducklake --help 2>&1 | grep -q unknown_verb"; check "irods-mcp-server --help"; \
     check "/opt/vice/python/bin/python3 -c 'import mesa_mcp, mesa_ducklake, duckdb; print(duckdb.__version__)'"; \
     check "test -f /opt/vice/MANIFEST.tsv"; \
     [ "$fail" = 0 ] || { echo "tools smoke test failed"; exit 1; }

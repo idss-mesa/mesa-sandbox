@@ -1,0 +1,76 @@
+# kubernetes-sigs/agent-sandbox templates for P3 (gVisor) and P4 (Kata) agent
+# pods (ADR-0007). API: extensions.agents.x-k8s.io/v1beta1 (agent-sandbox v1.0.x).
+# The launcher creates a SandboxClaim per autonomous run referencing one of these
+# and sets shutdownTime from the analysis time limit; shutdownPolicy is Delete.
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxTemplate
+metadata:
+  name: vice-p3-autonomous
+  namespace: vice-apps
+spec:
+  podTemplate:
+    metadata:
+      labels: { vice.cyverse.org/profile: P3, vice.cyverse.org/egress: N2 }
+    spec:
+      runtimeClassName: gvisor
+      serviceAccountName: vice-agent            # per-analysis SA substituted by the launcher
+      automountServiceAccountToken: true
+      securityContext: { runAsNonRoot: true, runAsUser: 1001, runAsGroup: 1001, fsGroup: 100 }
+      containers:
+        - name: agent
+          image: harbor.cyverse.org/vice/mesa-agent-runner:latest
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          resources: { requests: { cpu: "1", memory: 2Gi }, limits: { cpu: "4", memory: 16Gi } }
+          volumeMounts: [{ name: workspace, mountPath: /workspace }, { name: home, mountPath: /home/agent }]
+      volumes:
+        - { name: home, emptyDir: { sizeLimit: 2Gi } }
+  volumeClaimTemplates:
+    - metadata: { name: workspace }
+      spec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 20Gi } } }
+---
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxTemplate
+metadata:
+  name: vice-p4-isolated
+  namespace: vice-apps
+spec:
+  podTemplate:
+    metadata:
+      labels: { vice.cyverse.org/profile: P4, vice.cyverse.org/egress: N3 }
+    spec:
+      runtimeClassName: kata-gpu
+      serviceAccountName: vice-agent
+      automountServiceAccountToken: true
+      securityContext: { runAsNonRoot: true, runAsUser: 1001, runAsGroup: 1001, fsGroup: 100 }
+      nodeSelector: { gpu: "true" }
+      tolerations: [{ key: gpu, operator: Equal, value: "true", effect: NoSchedule }]
+      containers:
+        - name: agent
+          image: harbor.cyverse.org/vice/mesa-agent-runner:latest
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          resources: { requests: { cpu: "4", memory: 32Gi, nvidia.com/gpu: 1 }, limits: { cpu: "8", memory: 64Gi, nvidia.com/gpu: 1 } }
+          volumeMounts: [{ name: workspace, mountPath: /workspace }, { name: home, mountPath: /home/agent }]
+      volumes:
+        - { name: home, emptyDir: { sizeLimit: 2Gi } }
+  volumeClaimTemplates:
+    - metadata: { name: workspace }
+      spec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 50Gi } } }
+---
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxWarmPool
+metadata:
+  name: vice-p3-warm
+  namespace: vice-apps
+spec:
+  replicas: 2
+  sandboxTemplateRef: { name: vice-p3-autonomous }
+---
+# Example claim the launcher would create for one autonomous run.
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxClaim
+metadata:
+  name: example-p3-run
+  namespace: vice-apps
+  labels: { vice.cyverse.org/parent-analysis-id: example }
+spec:
+  sandboxTemplateRef: { name: vice-p3-autonomous }

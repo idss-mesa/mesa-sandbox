@@ -1,0 +1,68 @@
+# Kyverno policies for vice-apps (docs/profiles.md). Audit first, then Enforce.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: vice-profile-hardening }
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: p1-plus-drop-all-no-escalation
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps], selector: { matchExpressions: [{ key: vice.cyverse.org/profile, operator: In, values: [P1, P2, P3, P4] }] } } }] }
+      validate:
+        message: "P1+ pods must drop all capabilities, forbid privilege escalation and run non-root"
+        pattern:
+          spec:
+            securityContext: { runAsNonRoot: true }
+            containers:
+              - securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+    - name: p1-p2-seccomp-apparmor-localhost
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps], selector: { matchExpressions: [{ key: vice.cyverse.org/profile, operator: In, values: [P1, P2] }] } } }] }
+      validate:
+        message: "P1/P2 pods must use the vice-sandbox Localhost seccomp and AppArmor profiles"
+        pattern:
+          spec:
+            securityContext:
+              seccompProfile: { type: Localhost, localhostProfile: vice-sandbox.json }
+              appArmorProfile: { type: Localhost, localhostProfile: vice-sandbox }
+    - name: p3-requires-gvisor
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps], selector: { matchLabels: { vice.cyverse.org/profile: P3 } } } }] }
+      validate: { message: "P3 pods must run under the gvisor RuntimeClass", pattern: { spec: { runtimeClassName: gvisor } } }
+    - name: p4-requires-kata
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps], selector: { matchLabels: { vice.cyverse.org/profile: P4 } } } }] }
+      validate: { message: "P4 pods must run under a kata RuntimeClass", pattern: { spec: { runtimeClassName: "kata*" } } }
+    - name: no-host-namespaces-or-paths
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps] } }] }
+      validate:
+        message: "host namespaces, hostPath and privileged containers are never allowed in vice-apps"
+        pattern:
+          spec:
+            =(hostNetwork): "false"
+            =(hostPID): "false"
+            =(hostIPC): "false"
+            =(volumes): [{ X(hostPath): "null" }]
+            containers: [{ =(securityContext): { =(privileged): "false" } }]
+    - name: egress-label-required
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps] } }] }
+      validate:
+        message: "every vice-apps pod carries an egress class label (N0..N3)"
+        pattern: { metadata: { labels: { vice.cyverse.org/egress: "N?" } } }
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: vice-verify-images }
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: cosign-keyless-mesa-images
+      match: { any: [{ resources: { kinds: [Pod], namespaces: [vice-apps] } }] }
+      verifyImages:
+        - imageReferences: ["harbor.cyverse.org/vice/mesa-*"]
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/idss-mesa/mesa-sandbox/.github/workflows/bake.yml@refs/heads/main"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor: { url: https://rekor.sigstore.dev }
+          mutateDigest: true
+          verifyDigest: true

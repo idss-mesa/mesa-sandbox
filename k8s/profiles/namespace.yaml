@@ -1,0 +1,12 @@
+# Namespace for VICE analyses with Pod Security Admission in warn/audit first
+# (Phase 3), then enforce baseline, then restricted (docs/plan.md).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vice-apps
+  labels:
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+    # pod-security.kubernetes.io/enforce: baseline      # step 2
+    # pod-security.kubernetes.io/enforce: restricted    # step 3
+    vice.cyverse.org/tier: analyses

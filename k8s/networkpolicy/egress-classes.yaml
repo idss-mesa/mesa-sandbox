@@ -1,0 +1,78 @@
+# Egress classes N0–N3 (ADR-0005), selected by the pod label vice.cyverse.org/egress.
+# Namespace default-deny first; vice-operator already emits an equivalent.
+# Replace the CIDR placeholders per cluster (overlays/); FQDN allowlisting for
+# hosts with rotating IPs is the egress proxy's job, so N1/N2 only need to reach
+# the proxy plus DNS plus in-cluster services.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 00-default-deny, namespace: vice-apps }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 05-allow-dns, namespace: vice-apps }
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 06-allow-ingress-from-proxy, namespace: vice-apps }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { vice.cyverse.org/ingress: "true" } } }]   # the DE's vice-proxy/Traefik namespace
+---
+# N0: internet (today's behaviour), still logged by the proxy when present.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 10-egress-n0-internet, namespace: vice-apps }
+spec:
+  podSelector: { matchLabels: { vice.cyverse.org/egress: N0 } }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.169.254/32] } }]
+---
+# N1: trusted — CyVerse services, the LLM gateway, MCP endpoints, GitHub and
+# package registries. Implemented as "only the egress proxy" once Phase 4 ships;
+# until then the CIDRs of those services are listed here per cluster overlay.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 20-egress-n1-trusted, namespace: vice-apps }
+spec:
+  podSelector: { matchLabels: { vice.cyverse.org/egress: N1 } }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { vice.cyverse.org/component: egress-proxy } } }]
+      ports: [{ protocol: TCP, port: 3128 }]
+    - to: [{ ipBlock: { cidr: REPLACE_ME_CYVERSE_SERVICES_CIDR } }]
+      ports: [{ protocol: TCP, port: 443 }, { protocol: TCP, port: 1247 }]
+---
+# N2: CyVerse-only — Keycloak, Data Store, gateway, MCP (through the proxy).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 30-egress-n2-cyverse, namespace: vice-apps }
+spec:
+  podSelector: { matchLabels: { vice.cyverse.org/egress: N2 } }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { vice.cyverse.org/component: egress-proxy } } }]
+      ports: [{ protocol: TCP, port: 3128 }]
+    - to: [{ ipBlock: { cidr: REPLACE_ME_DATASTORE_CIDR } }]
+      ports: [{ protocol: TCP, port: 1247 }]
+---
+# N3: none — only DNS (above) and nothing else. No rule needed beyond default-deny;
+# this policy exists so the label is explicit and auditable.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: 40-egress-n3-none, namespace: vice-apps }
+spec:
+  podSelector: { matchLabels: { vice.cyverse.org/egress: N3 } }
+  policyTypes: [Egress]
+  egress: []

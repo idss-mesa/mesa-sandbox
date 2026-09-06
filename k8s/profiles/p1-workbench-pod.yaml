@@ -1,0 +1,47 @@
+# Profile P1 "Workbench": the human's interactive analysis pod, hardened (R1).
+# This is the shape app-exposer should emit for the `analysis` container
+# (k8s/app-exposer/ has the patch note). Shown as a standalone Pod for tests.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-p1-cli
+  namespace: vice-apps
+  labels:
+    vice.cyverse.org/profile: P1
+    vice.cyverse.org/app: mesa-cli
+    vice.cyverse.org/analysis-id: example
+spec:
+  hostUsers: false                      # user namespace (K8s >= 1.33 default-on, GA 1.36)
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 100
+    fsGroup: 100
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile: { type: Localhost, localhostProfile: vice-sandbox.json }
+    appArmorProfile: { type: Localhost, localhostProfile: vice-sandbox }
+  containers:
+    - name: analysis
+      image: harbor.cyverse.org/vice/mesa-cli:latest
+      env:
+        - { name: IPLANT_USER, value: example }
+        - { name: VICE_PROFILE, value: P1 }
+        - { name: VICE_LLM_BASE_URL, value: https://llm-api.cyverse.ai/v1 }
+      ports: [{ name: tcp-a-1, containerPort: 7681 }]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: [ALL] }
+        readOnlyRootFilesystem: false   # home lives in the image layer today; true once home is a volume
+      resources:
+        requests: { cpu: "1", memory: 4Gi }
+        limits: { cpu: "4", memory: 16Gi }
+      readinessProbe: { httpGet: { path: /, port: tcp-a-1 }, periodSeconds: 31, failureThreshold: 10 }
+      volumeMounts:
+        - { name: data-store, mountPath: /data-store }
+        - { name: tmp, mountPath: /tmp }
+  volumes:
+    - name: data-store
+      persistentVolumeClaim: { claimName: example-data-store }   # irods.csi.cyverse.org PV created by app-exposer
+    - name: tmp
+      emptyDir: { sizeLimit: 8Gi }

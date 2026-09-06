@@ -1,0 +1,21 @@
+# CyVerse production VICE cluster (ADR-0012). Values to be filled from the node
+# baseline checklist (docs/runbooks/node-baseline-checklist.md).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../profiles/namespace.yaml
+  - ../../profiles/runtimeclasses.yaml
+  - ../../networkpolicy/egress-classes.yaml
+  - ../../agent-sandbox/sandboxtemplates.yaml
+  - ../../kyverno/policies.yaml
+patches:
+  - target: { kind: NetworkPolicy, name: 20-egress-n1-trusted }
+    patch: |
+      - op: replace
+        path: /spec/egress/1/to/0/ipBlock/cidr
+        value: REPLACE_ME_CYVERSE_SERVICES_CIDR
+  - target: { kind: NetworkPolicy, name: 30-egress-n2-cyverse }
+    patch: |
+      - op: replace
+        path: /spec/egress/1/to/0/ipBlock/cidr
+        value: REPLACE_ME_DATASTORE_CIDR
