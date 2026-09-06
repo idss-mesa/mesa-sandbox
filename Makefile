@@ -8,7 +8,7 @@ LOCAL_PLATFORM := $(shell docker version --format '{{.Server.Os}}/{{.Server.Arch
 BAKE      = docker buildx bake -f resources.hcl -f docker-bake.hcl
 BAKEVARS  = REGISTRY=$(REGISTRY) TAG=$(TAG) GIT_SHA=$(GIT_SHA) SOURCE_DATE_EPOCH=$(EPOCH)
 
-.PHONY: venv lock export check hcl python-lock build test build-all push builder ci
+.PHONY: venv lock export check hcl python-lock build test build-all push push-arch builder ci
 
 venv:            ## local venv with PyYAML for scripts/resources.py
 	python3 -m venv .venv && .venv/bin/pip install -q pyyaml
@@ -29,6 +29,8 @@ build-all:       ## multi-arch build of every image (needs a multi-node builder,
 	$(BAKEVARS) PLATFORMS=linux/amd64,linux/arm64 ATTEST=true $(BAKE) all
 push:            ## multi-arch build and push (manifest lists) of every image
 	$(BAKEVARS) PLATFORMS=linux/amd64,linux/arm64 ATTEST=true $(BAKE) --push all
+push-arch:       ## push single-arch images for the LOCAL platform as <TAG>-<arch> (T=targets; never touches :latest)
+	$(BAKEVARS) TAG=$(TAG)-$(lastword $(subst /, ,$(LOCAL_PLATFORM))) PLATFORMS=$(LOCAL_PLATFORM) $(BAKE) --set '*.cache-from=' --set '*.cache-to=' --push $(or $(T),all)
 builder:         ## create the multi-node builder: local node + AMD_VM (ssh://user@host) [+ SPARK]
 	@[ -n "$(AMD_VM)" ] || { echo "usage: make builder AMD_VM=ssh://user@amd-vm [SPARK=ssh://user@sparky-1]"; exit 1; }
 	docker buildx create --name mesa --driver docker-container --platform linux/arm64 --use || true

@@ -41,6 +41,10 @@ docker buildx imagetools inspect harbor.cyverse.org/vice/mesa-cli:$(date +%F)
 
 Use `vice-app-integrator` (separate repo): `validate_dockerfile` on each `images/*/Dockerfile`, `create_tool` with the Harbor image (multi-arch tag), `create_app` per app, then `vice_test_app`/`launch_app`.
 
+## Single-architecture pushes from one node
+
+Until a second node exists, `make push-arch TAG=<date>` pushes the local platform's images as `mesa-<app>:<date>-<arch>` (for example `2026-09-06-arm64`). These are complete, usable images for that architecture; `:latest` and the date tag without suffix stay reserved for manifest lists, which `make push` (multi-node) or CI produce later. The docker driver cannot export registry cache or attestations, so `push-arch` disables both.
+
 ## Local-only cycle
 
 ```bash
