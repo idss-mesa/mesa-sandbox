@@ -94,7 +94,7 @@ jobs:
           done
       - name: Sign manifest lists (cosign keyless)
         if: env.HARBOR_USERNAME != ''
-        uses: sigstore/cosign-installer@v4
+        uses: sigstore/cosign-installer@v4.1.2
       - if: env.HARBOR_USERNAME != ''
         run: |
           for t in $TARGETS; do name=$(cut -d@ -f1 /tmp/digests/$t.* 2>/dev/null | head -1); [ -n "$name" ] || continue
