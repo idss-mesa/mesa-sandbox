@@ -43,8 +43,8 @@ RUN set -eux; V=/opt/vice; mkdir -p $V/bin; cd /dl; \
     # single binaries
     install -m 0755 tini-* $V/bin/tini; \
     install -m 0755 ttyd.* $V/bin/ttyd; \
-    gunzip -c duckdb_cli-linux-*.gz > $V/bin/duckdb && chmod 0755 $V/bin/duckdb; \
-    # tarballs with one binary inside
+    # tarballs with one binary inside (DuckDB ships its CLI as a tarball since 2.0)
+    mkdir -p /x/duckdb && tar -xzf duckdb-cli-linux-*.tar.gz -C /x/duckdb && install -m 0755 "$(find /x/duckdb -type f -name duckdb | head -1)" $V/bin/duckdb; \
     mkdir -p /x/gocmd && tar -xzf gocmd-*.tar.gz -C /x/gocmd && install -m 0755 "$(find /x/gocmd -type f -name gocmd | head -1)" $V/bin/gocmd; \
     mkdir -p /x/gh && tar -xzf gh_*.tar.gz -C /x/gh && install -m 0755 "$(find /x/gh -type f -path '*/bin/gh' | head -1)" $V/bin/gh; \
     mkdir -p /x/ant && tar -xzf ant_*.tar.gz -C /x/ant && install -m 0755 "$(find /x/ant -type f -name ant | head -1)" $V/bin/ant; \
